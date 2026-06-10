@@ -1415,6 +1415,15 @@
       drinks: 'Напитки'
     };
 
+    // Русское название категории: сначала из Firebase, потом из CAT_NAMES, потом ID как есть
+    function getCatName(cat) {
+      if (window._menuRaw && window._menuRaw.categories) {
+        const found = window._menuRaw.categories.find(c => c.id === cat);
+        if (found && found.name) return found.name;
+      }
+      return CAT_NAMES[cat] || cat;
+    }
+
     function renderAllMenu() {
       const cats = Object.keys(menuData).filter(c => menuData[c] && menuData[c].length > 0);
       const allCats = cats.length ? cats : ['starters','mains','desserts','drinks'];
@@ -1432,7 +1441,7 @@
         const tab = document.createElement('div');
         tab.className = 'tab' + (i === 0 ? ' active' : '');
         tab.setAttribute('data-category', cat);
-        tab.textContent = CAT_NAMES[cat] || cat;
+        tab.textContent = getCatName(cat);
         tab.addEventListener('click', () => {
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           document.querySelectorAll('.menu-category').forEach(c => c.classList.remove('active'));
@@ -1478,10 +1487,12 @@
 
     import('./firebase-db.js').then(fb => {
       fb.getMenuFromCloud().then(menu => {
+        window._menuRaw = menu;
         menuData = fb.menuToZebFormat(menu);
         renderAllMenu();
       }).catch(e => console.warn('Firebase menu:', e));
       fb.subscribeMenu(menu => {
+        window._menuRaw = menu;
         menuData = fb.menuToZebFormat(menu);
         renderAllMenu();
       });
