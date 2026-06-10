@@ -637,7 +637,7 @@ function loadBookings(){
     tb.innerHTML=bks.map(b=>{
       const dt=b.createdAt&&b.createdAt.seconds?new Date(b.createdAt.seconds*1000).toLocaleString('ru-RU'):'-';
       return '<tr><td style="font-size:12px">'+dt+'</td><td><b>'+esc(b.name||'-')+'</b></td><td>'+esc(b.phone||'-')+'</td><td>'+esc(b.email||'-')+'</td><td>'+esc(b.date||'-')+'</td><td>'+esc(b.time||'-')+'</td><td>'+esc(b.guests||'-')+'</td><td style="font-size:12px">'+esc(b.comment||'')+'</td>'+
-        '<td><button class="btn-del" onclick="deleteBooking('' +b.id+ '')">✕</button></td></tr>';
+        '<td><button class="btn-del" onclick="deleteBooking(\'' +b.id+ '\')">✕</button></td></tr>';
     }).join('');
   },err=>{
     st.textContent='⚠ Ошибка Firebase: '+err.message;
@@ -678,12 +678,12 @@ function loadOrders(){
         '<td>'+type+'<br><small>'+esc(o.paymentLabel||o.payment||'-')+'</small></td>'+
         '<td style="font-size:12px">'+items+'</td>'+
         '<td><b style="color:#d4a574">'+(o.total||0).toLocaleString('ru')+' ₽</b></td>'+
-        '<td><select onchange="changeOrderStatus('' +o.id+ '',this.value)" style="border:1px solid #e0d8d0;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer">'+
+        '<td><select onchange="changeOrderStatus(\'' +o.id+ '\',this.value)" style="border:1px solid #e0d8d0;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer">'+
           '<option value="new"'+((!o.status||o.status==='new')?' selected':'')+'>🟡 Новый</option>'+
           '<option value="paid"'+(o.status==='paid'?' selected':'')+'>🟢 Оплачен</option>'+
           '<option value="done"'+(o.status==='done'?' selected':'')+'>✅ Выполнен</option>'+
         '</select></td>'+
-        '<td><button class="btn-del" onclick="deleteOrder('' +o.id+ '')">✕</button></td></tr>';
+        '<td><button class="btn-del" onclick="deleteOrder(\'' +o.id+ '\')">✕</button></td></tr>';
     }).join('');
   },err=>{
     st.textContent='⚠ Ошибка Firebase: '+err.message;
