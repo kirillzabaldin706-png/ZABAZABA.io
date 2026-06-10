@@ -180,7 +180,7 @@ tr:hover td{background:#fff9f3}
       <div class="card">
         <h3>Бронирования столиков</h3>
         <div id="bk-status" style="color:#d4a574;margin-bottom:12px;font-size:14px">Подключение к Firebase...</div>
-        <div style="overflow-x:auto"><table><thead><tr><th>Дата записи</th><th>Имя</th><th>Телефон</th><th>Email</th><th>Дата визита</th><th>Время</th><th>Гостей</th><th>Комментарий</th></tr></thead><tbody id="bk-tb"><tr><td colspan="8" style="text-align:center;color:#999">Загрузка...</td></tr></tbody></table></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Дата записи</th><th>Имя</th><th>Телефон</th><th>Email</th><th>Дата визита</th><th>Время</th><th>Гостей</th><th>Комментарий</th><th>Удалить</th></tr></thead><tbody id="bk-tb"><tr><td colspan="9" style="text-align:center;color:#999">Загрузка...</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -189,7 +189,7 @@ tr:hover td{background:#fff9f3}
       <div class="card">
         <h3>Заказы из корзины</h3>
         <div id="ord-status" style="color:#d4a574;margin-bottom:12px;font-size:14px">Подключение к Firebase...</div>
-        <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Имя</th><th>Телефон</th><th>Тип / Оплата</th><th>Блюда</th><th>Сумма</th><th>Статус</th></tr></thead><tbody id="ord-tb"><tr><td colspan="7" style="text-align:center;color:#999">Загрузка...</td></tr></tbody></table></div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Имя</th><th>Телефон</th><th>Тип / Оплата</th><th>Блюда</th><th>Сумма</th><th>Статус</th><th>Действия</th></tr></thead><tbody id="ord-tb"><tr><td colspan="8" style="text-align:center;color:#999">Загрузка...</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -633,16 +633,24 @@ function loadBookings(){
     const bks=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     st.textContent='✓ Firebase подключён. Бронирований: '+bks.length;
     st.style.color='#27ae60';
-    if(!bks.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999">Бронирований пока нет</td></tr>';return}
+    if(!bks.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:#999">Бронирований пока нет</td></tr>';return}
     tb.innerHTML=bks.map(b=>{
       const dt=b.createdAt&&b.createdAt.seconds?new Date(b.createdAt.seconds*1000).toLocaleString('ru-RU'):'-';
-      return '<tr><td style="font-size:12px">'+dt+'</td><td><b>'+esc(b.name||'-')+'</b></td><td>'+esc(b.phone||'-')+'</td><td>'+esc(b.email||'-')+'</td><td>'+esc(b.date||'-')+'</td><td>'+esc(b.time||'-')+'</td><td>'+esc(b.guests||'-')+'</td><td style="font-size:12px">'+esc(b.comment||'')+'</td></tr>';
+      return '<tr><td style="font-size:12px">'+dt+'</td><td><b>'+esc(b.name||'-')+'</b></td><td>'+esc(b.phone||'-')+'</td><td>'+esc(b.email||'-')+'</td><td>'+esc(b.date||'-')+'</td><td>'+esc(b.time||'-')+'</td><td>'+esc(b.guests||'-')+'</td><td style="font-size:12px">'+esc(b.comment||'')+'</td>'+
+        '<td><button class="btn-del" onclick="deleteBooking('' +b.id+ '')">✕</button></td></tr>';
     }).join('');
   },err=>{
     st.textContent='⚠ Ошибка Firebase: '+err.message;
     st.style.color='#c0392b';
-    tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#c0392b">Ошибка загрузки</td></tr>';
+    tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:#c0392b">Ошибка загрузки</td></tr>';
   });
+}
+
+async function deleteBooking(id){
+  if(!confirm('Удалить бронирование?'))return;
+  try{
+    await db.collection('bookings').doc(id).delete();
+  }catch(e){alert('Ошибка удаления: '+e.message);}
 }
 
 // ═══════════════════════════════════════════════════
@@ -661,7 +669,7 @@ function loadOrders(){
     const orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     st.textContent='✓ Firebase подключён. Заказов: '+orders.length;
     st.style.color='#27ae60';
-    if(!orders.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#999">Заказов пока нет</td></tr>';return}
+    if(!orders.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999">Заказов пока нет</td></tr>';return}
     tb.innerHTML=orders.map(o=>{
       const dt=o.createdAt&&o.createdAt.seconds?new Date(o.createdAt.seconds*1000).toLocaleString('ru-RU'):'-';
       const items=(o.items||[]).map(i=>esc(i.name)+' x'+(i.qty||1)).join(', ');
@@ -670,13 +678,31 @@ function loadOrders(){
         '<td>'+type+'<br><small>'+esc(o.paymentLabel||o.payment||'-')+'</small></td>'+
         '<td style="font-size:12px">'+items+'</td>'+
         '<td><b style="color:#d4a574">'+(o.total||0).toLocaleString('ru')+' ₽</b></td>'+
-        '<td>'+statusLabel(o.status)+'</td></tr>';
+        '<td><select onchange="changeOrderStatus('' +o.id+ '',this.value)" style="border:1px solid #e0d8d0;border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer">'+
+          '<option value="new"'+((!o.status||o.status==='new')?' selected':'')+'>🟡 Новый</option>'+
+          '<option value="paid"'+(o.status==='paid'?' selected':'')+'>🟢 Оплачен</option>'+
+          '<option value="done"'+(o.status==='done'?' selected':'')+'>✅ Выполнен</option>'+
+        '</select></td>'+
+        '<td><button class="btn-del" onclick="deleteOrder('' +o.id+ '')">✕</button></td></tr>';
     }).join('');
   },err=>{
     st.textContent='⚠ Ошибка Firebase: '+err.message;
     st.style.color='#c0392b';
-    tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#c0392b">Ошибка загрузки</td></tr>';
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#c0392b">Ошибка загрузки</td></tr>';
   });
+}
+
+async function deleteOrder(id){
+  if(!confirm('Удалить заказ?'))return;
+  try{
+    await db.collection('orders').doc(id).delete();
+  }catch(e){alert('Ошибка удаления: '+e.message);}
+}
+
+async function changeOrderStatus(id,status){
+  try{
+    await db.collection('orders').doc(id).update({status:status,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  }catch(e){alert('Ошибка смены статуса: '+e.message);}
 }
 
 // ═══════════════════════════════════════════════════
